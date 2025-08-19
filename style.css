@@ -9,6 +9,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
 }
@@ -107,4 +108,33 @@ body {
   cursor: pointer;
   outline: none;
   letter-spacing: 1px;
+}
+
+#name-form {
+  margin-bottom: 20px;
+}
+
+#name-form input {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+#name-form button {
+  padding: 10px 16px;
+  margin-left: 8px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background: #3f51b5;
+  color: #fff;
+  cursor: pointer;
+}
+
+.result-box {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #fff;
+  text-align: center;
 }
