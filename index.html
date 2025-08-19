@@ -1,0 +1,105 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Spin Wheel</title>
+  </head>
+  <body>
+    <button id="spin">Spin</button>
+    <span class="arrow"></span>
+    <div class="container">
+      <div class="one">1</div>
+      <div class="two">2</div>
+      <div class="three">3</div>
+      <div class="four">4</div>
+      <div class="five">5</div>
+      <div class="six">6</div>
+      <div class="seven">7</div>
+      <div class="eight">8</div>
+    </div>
+  </body>
+  <script>
+    let container = document.querySelector(".container");
+    let btn = document.getElementById("spin");
+    let number = Math.ceil(Math.random() * 1000);
+    let clicks = 0;
+
+    // Призы и Apps Script
+    const PRIZES = [
+      "Стикер",
+      "Кружка",
+      "Флешка",
+      "Шоколадка",
+      "Блокнот",
+      "Ручка",
+      "Магнит",
+      "Брелок",
+    ];
+    const SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbw_Im81Je-G5AbjlTMw2TyXyxBgaHZu57arqPnCmzmrpKGmGuqM-YWhwb-vGCy5urzS/exec";
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get("id");
+    const resultDiv = document.getElementById("result");
+
+    if (!userId) {
+      resultDiv.textContent = "Ошибка: нет ID в ссылке!";
+      btn.disabled = true;
+    }
+
+    // Проверка участия
+    async function checkUser() {
+      if (!userId) return;
+      try {
+        const res = await fetch(
+          `${SCRIPT_URL}?id=${encodeURIComponent(userId)}`
+        );
+        const data = await res.json();
+        if (data.status === "used" && data.prize) {
+          resultDiv.textContent = `Вы уже участвовали! Ваш приз: ${data.prize}`;
+          btn.disabled = true;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    checkUser();
+
+    // Вращение и отправка приза
+    btn.onclick = async function () {
+      clicks += 1;
+      if (clicks > 1) return;
+
+      container.style.transform = "rotate(" + number + "deg)";
+      number += Math.ceil(Math.random() * 1000);
+
+      // Случайный приз
+      const prizeIndex = Math.floor(Math.random() * PRIZES.length);
+      const prize = PRIZES[prizeIndex];
+
+      // Отправка в Google Sheets
+      setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `${SCRIPT_URL}?id=${encodeURIComponent(
+              userId
+            )}&result=${encodeURIComponent(prize)}&ua=${encodeURIComponent(
+              navigator.userAgent
+            )}`
+          );
+          const data = await res.json();
+          if (data.status === "ok") {
+            resultDiv.textContent = `Поздравляем! Ваш приз: ${data.prize}`;
+          } else if (data.status === "used") {
+            resultDiv.textContent = `Вы уже участвовали! Ваш приз: ${data.prize}`;
+          } else {
+            resultDiv.textContent = `Ошибка: ${data.message || "неизвестная"}`;
+          }
+        } catch (e) {
+          console.error(e);
+          resultDiv.textContent = "Ошибка соединения со скриптом";
+        }
+      }, 5000); // после анимации
+    };
+  </script>
+</html>
