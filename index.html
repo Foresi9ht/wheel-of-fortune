@@ -18,14 +18,28 @@
       <div class="seven">7</div>
       <div class="eight">8</div>
     </div>
+
+    <!-- РЕЗУЛЬТАТ -->
+    <div
+      id="result"
+      style="
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #fff;
+        font: 16px/1.4 sans-serif;
+        text-align: center;
+      "
+    ></div>
   </body>
+
   <script>
     let container = document.querySelector(".container");
     let btn = document.getElementById("spin");
     let number = Math.ceil(Math.random() * 1000);
     let clicks = 0;
 
-    // Призы и Apps Script
     const PRIZES = [
       "Стикер",
       "Кружка",
@@ -36,8 +50,10 @@
       "Магнит",
       "Брелок",
     ];
-    const SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbw_Im81Je-G5AbjlTMw2TyXyxBgaHZu57arqPnCmzmrpKGmGuqM-YWhwb-vGCy5urzS/exec";
+
+    // URL веб-приложения Apps Script (Новый — см. раздел 2)
+    const SCRIPT_URL = "<<<ВСТАВЬ_СЮДА_СВОЙ_DEPLOYED_URL>>>";
+
     const params = new URLSearchParams(window.location.search);
     const userId = params.get("id");
     const resultDiv = document.getElementById("result");
@@ -47,7 +63,7 @@
       btn.disabled = true;
     }
 
-    // Проверка участия
+    // Проверка права на участие/повторов
     async function checkUser() {
       if (!userId) return;
       try {
@@ -55,17 +71,30 @@
           `${SCRIPT_URL}?id=${encodeURIComponent(userId)}`
         );
         const data = await res.json();
-        if (data.status === "used" && data.prize) {
+
+        if (data.status === "invalid") {
+          resultDiv.textContent = "Ссылка недействительна.";
+          btn.disabled = true;
+        } else if (data.status === "used" && data.prize) {
           resultDiv.textContent = `Вы уже участвовали! Ваш приз: ${data.prize}`;
+          btn.disabled = true;
+        } else if (data.status === "ok") {
+          // можно крутить
+          resultDiv.textContent = "Нажмите Spin, чтобы испытать удачу!";
+          btn.disabled = false;
+        } else {
+          resultDiv.textContent = "Неизвестный ответ сервера.";
           btn.disabled = true;
         }
       } catch (e) {
         console.error(e);
+        resultDiv.textContent = "Ошибка соединения. Попробуйте позже.";
+        btn.disabled = true;
       }
     }
     checkUser();
 
-    // Вращение и отправка приза
+    // Вращение и отправка результата
     btn.onclick = async function () {
       clicks += 1;
       if (clicks > 1) return;
@@ -73,11 +102,9 @@
       container.style.transform = "rotate(" + number + "deg)";
       number += Math.ceil(Math.random() * 1000);
 
-      // Случайный приз
       const prizeIndex = Math.floor(Math.random() * PRIZES.length);
       const prize = PRIZES[prizeIndex];
 
-      // Отправка в Google Sheets
       setTimeout(async () => {
         try {
           const res = await fetch(
@@ -88,10 +115,16 @@
             )}`
           );
           const data = await res.json();
+
           if (data.status === "ok") {
             resultDiv.textContent = `Поздравляем! Ваш приз: ${data.prize}`;
+            btn.disabled = true;
           } else if (data.status === "used") {
             resultDiv.textContent = `Вы уже участвовали! Ваш приз: ${data.prize}`;
+            btn.disabled = true;
+          } else if (data.status === "invalid") {
+            resultDiv.textContent = "Ссылка недействительна.";
+            btn.disabled = true;
           } else {
             resultDiv.textContent = `Ошибка: ${data.message || "неизвестная"}`;
           }
@@ -99,7 +132,7 @@
           console.error(e);
           resultDiv.textContent = "Ошибка соединения со скриптом";
         }
-      }, 5000); // после анимации
+      }, 5000);
     };
   </script>
 </html>
